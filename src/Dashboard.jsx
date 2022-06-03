@@ -24,87 +24,88 @@ const Dashboard = ({ code }) => {
   const [playingTrack, setPlayingTrack] = useState()
   const [lyrics, setLyrics] = useState("")
 
-function chooseTrack(track) {
-  setPlayingTrack(track)
-  setSearch("")
-  setLyrics("")
-}
+  function chooseTrack(track) {
+    setPlayingTrack(track)
+    setSearch("")
+    setLyrics("")
+  }
 
-useEffect(() => {
-  if (!playingTrack) return
-  ;(async () => {
-    const {
-      data: { lyrics },
-    } = await axios.get(`${process.env.REACT_APP_BASE_URL}/lyrics`, {
-      params: {
-        track: playingTrack.title,
-        artist: playingTrack.artist,
-      },
-    })
-    setLyrics(lyrics)
-  })()
-}, [playingTrack])
-
-useEffect(() => {
-  if (!accessToken) return
-  spotifyApi.setAccessToken(accessToken)
-}, [accessToken])
-
-useEffect(() => {
-  if (!search) return setSearchResults([])
-  if (!accessToken) return
-
-  let cancel = false
-  ;(async () => {
-    const { body } = await spotifyApi.searchTracks(search)
-    if (cancel) return
-    setSearchResults(
-      body.tracks.items.map(track => {
-        const smallestAlbumImage = track.album.images.reduce(
-          (smallest, image) => {
-            if (image.height < smallest.height) return image
-          },
-          track.album.images[0]
-        )
-
-        return {
-          artist: track.artists[0].name,
-          title: track.name,
-          uri: track.uri,
-          albumUrl: smallestAlbumImage.url,
-        }
+  useEffect(() => {
+    if (!playingTrack) return
+    ;(async () => {
+      const {
+        data: { lyrics },
+      } = await axios.get(`${process.env.REACT_APP_BASE_URL}/lyrics`, {
+        params: {
+          track: playingTrack.title,
+          artist: playingTrack.artist,
+        },
       })
-    )
-  })()
+      setLyrics(lyrics)
+    })()
+  }, [playingTrack])
 
-  return () => (cancel = true)
-}, [search, accessToken])
+  useEffect(() => {
+    if (!accessToken) return
+    spotifyApi.setAccessToken(accessToken)
+  }, [accessToken])
 
-return (
-  <DashboardContainer>
-    <SearchInput
-      type="search"
-      placeholder="Search Songs/Artists"
-      value={search}
-      onChanges={e => setSearch(e.target.value)}
-    />
-    <ResultsContainer>
-      {searchResults.map(track => (
-        <TrackSearchResult
-          track={track}
-          key={track.uri}
-          chooseTrack={chooseTrack}
+  useEffect(() => {
+    if (!search) return setSearchResults([])
+    if (!accessToken) return
+
+    let cancel = false
+    ;(async () => {
+      const { body } = await spotifyApi.searchTracks(search)
+      if (cancel) return
+      setSearchResults(
+        body.tracks.items.map(track => {
+          const smallestAlbumImage = track.album.images.reduce(
+            (smallest, image) => {
+              if (image.height < smallest.height) return image
+              return smallest
+            },
+            track.album.images[0]
+          )
+
+          return {
+            artist: track.artists[0].name,
+            title: track.name,
+            uri: track.uri,
+            albumUrl: smallestAlbumImage.url,
+          }
+        })
+      )
+    })()
+
+    return () => (cancel = true)
+  }, [search, accessToken])
+
+  return (
+    <DashboardContainer>
+      <SearchInput
+        type="search"
+        placeholder="Search Songs/Artists"
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+      />
+      <ResultsContainer>
+        {searchResults.map(track => (
+          <TrackSearchResult
+            track={track}
+            key={track.uri}
+            chooseTrack={chooseTrack}
           />
-      ))}
-      {searchResults.length === 0 && (
-        <LyricsContainer>{lyrics}</LyricsContainer>
-      )}
-    </ResultsContainer>
-    <PlayerContainer>
-      <Player accessToken={accessToken} trackUri={playingTrack?.uri} />
-    </PlayerContainer>
-  </DashboardContainer>
-)
+        ))}
+        {searchResults.length === 0 && (
+          <LyricsContainer>{lyrics}</LyricsContainer>
+        )}
+      </ResultsContainer>
+      <PlayerContainer>
+        <Player accessToken={accessToken} trackUri={playingTrack?.uri} />
+      </PlayerContainer>
+    </DashboardContainer>
+  )
 }
 
 export default Dashboard
